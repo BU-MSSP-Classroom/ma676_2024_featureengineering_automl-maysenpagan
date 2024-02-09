@@ -333,14 +333,14 @@ Since you've worked on it in MA679 please copy and paste your best model here.
 lmfit_2008<- lm(log(SalePrice) ~ `Overall Qual` + Foundation + `Year Remod/Add` + (`TotRms AbvGrd`*log(`Lot Area`)) + (`Garage Cars`*log(`Lot Area`)), data = ames_raw_2008)
 
 pred_2009<-exp(predict(lmfit_2008,newdata=ames_raw_2009))
-calc_loss(pred_2009,ames_raw_2009$SalePrice)
+loss <- calc_loss(pred_2009,ames_raw_2009$SalePrice)
 ```
 
 Your answer:
 
 ~~~
-Please write your answer in full sentences.
 
+Before performing feature engineering, my best model was log of sale price against the predictors overall quality, foundation, year remodeled/added, total rooms above grade, log of lot area, and garage cars. The model also included interaction terms between total rooms above grade and log of lot area as well as between garage cars and log of lot area.
 
 ~~~
 
@@ -348,52 +348,46 @@ Please perform feature engineering on the Ames housing data that you think will 
 
 ```{r,echo=TRUE}
 #standardize variables im going to use
-ames_raw$`Overall Qual` <- scale(ames_raw$`Overall Qual`)
+#ames_raw$`Overall Qual` <- scale(ames_raw$`Overall Qual`)
 ames_raw$`Lot Area` <- scale(log(ames_raw$`Lot Area`))
 ames_raw$SalePrice <- scale(log(ames_raw$SalePrice))
-ames_raw$`Garage Cars` <- scale(ames_raw$`Garage Cars`)
-ames_raw$`TotRms AbvGrd` <- scale(ames_raw$`TotRms AbvGrd`)
 #change year remod/add to years since minimum year (1950)
 min_year <- min(unique(ames_raw$`Year Remod/Add`))
 ames_raw$`Year Remod/Add` <- ames_raw$`Year Remod/Add`-min_year
 #standardized years since 1950
 ames_raw$`Year Remod/Add` <- scale(ames_raw$`Year Remod/Add`)
 #one hot encode foundation variable
-dummy <- dummyVars(" ~ Foundation", data=ames_raw)
-final_df <- data.frame(predict(dummy, newdata=ames_raw))
-ames_raw <- cbind(ames_raw, final_df)
+# dummy <- dummyVars(" ~ Foundation", data=ames_raw)
+# final_df <- data.frame(predict(dummy, newdata=ames_raw))
+# ames_raw <- cbind(ames_raw, final_df)
 
 ames_raw_2008=ames_raw[ames_raw$`Yr Sold`<2008,]
 ames_raw_2009=ames_raw[ames_raw$`Yr Sold`>=2008,]
 
-lmfit_2008<- lm(SalePrice ~ `Overall Qual` + Foundation + `Year Remod/Add` + (`TotRms AbvGrd`*`Lot Area`) + (`Garage Cars`*`Lot Area`), data = ames_raw_2008)
+lmfit_2008_fe<- lm(SalePrice ~ `Overall Qual` + Foundation + `Year Remod/Add` + (`TotRms AbvGrd`*`Lot Area`) + (`Garage Cars`*`Lot Area`), data = ames_raw_2008)
 
-pred_2009<-exp(predict(lmfit_2008,newdata=ames_raw_2009))
-calc_loss(pred_2009,ames_raw_2009$SalePrice)
+pred_2009_fe<-exp(predict(lmfit_2008_fe,newdata=ames_raw_2009))
+loss_fe <- calc_loss(pred_2009_fe,ames_raw_2009$SalePrice)
 ```
 
 Your answer:
 
 ~~~
-One type of feature engineering I applied to the model was indexing the categorical variables. For the variable `TotRms AbvGrd`, there are three levels that contain only one occurrence. There is only one house that has 2 total rooms above grade and there is only one house that has 14 rooms above grade and similar with 15 rooms above grade. Therefore, I will group all total rooms levels that have less than 10 houses under "OTHER"
-
-
+One type of feature engineering I applied to the model was scaling the response variable and sale price. For these variables, the log transformation was applied before scaling. The next step was altering the year remodeled/added variable. Rather than including the years as is in the model, I converted the variable to be the number of years since the minimum year a house was built or remodeled. In this case, the minimum year was 1950 and so for every house, the difference was taken between the year it was built/remodeled and 1950. This variable was also then scaled.
 ~~~
 
 Compare the result before and after the feature engineering step.
 
 ```{r,echo=TRUE}
-##
-##
+loss
+loss_fe
 ```
 
 
 Your answer:
 
 ~~~
-Please write your answer in full sentences.
-
-
+By scaling a few variables in feature engineering, the calculated loss decreased by over 33,000,000. Other feature engineering methods should be applied to see if the calculated loss could decrease more. 
 ~~~
 
 ## AutoML 
