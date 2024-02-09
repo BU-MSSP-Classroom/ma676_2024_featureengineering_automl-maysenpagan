@@ -51,8 +51,10 @@ pacman::p_load(
 
 We will look at the Ames Housing data.  The task is to predict the houses after 2008 based on data up to 2008.
 ```{r}
+library(caret)
 library(AmesHousing)
 data(ames_raw,package = "AmesHousing")
+
 ames_raw_2008=ames_raw[ames_raw$`Yr Sold`<2008,]
 ames_raw_2009=ames_raw[ames_raw$`Yr Sold`>=2008,]
 ```
@@ -328,8 +330,10 @@ You will use the framework of tidymodel workflow, which will run these transform
 
 Since you've worked on it in MA679 please copy and paste your best model here.  
 ```{r,echo=TRUE}
-##
-##
+lmfit_2008<- lm(log(SalePrice) ~ `Overall Qual` + Foundation + `Year Remod/Add` + (`TotRms AbvGrd`*log(`Lot Area`)) + (`Garage Cars`*log(`Lot Area`)), data = ames_raw_2008)
+
+pred_2009<-exp(predict(lmfit_2008,newdata=ames_raw_2009))
+calc_loss(pred_2009,ames_raw_2009$SalePrice)
 ```
 
 Your answer:
@@ -343,14 +347,35 @@ Please write your answer in full sentences.
 Please perform feature engineering on the Ames housing data that you think will help with the prediction.
 
 ```{r,echo=TRUE}
-##
-##
+#standardize variables im going to use
+ames_raw$`Overall Qual` <- scale(ames_raw$`Overall Qual`)
+ames_raw$`Lot Area` <- scale(log(ames_raw$`Lot Area`))
+ames_raw$SalePrice <- scale(log(ames_raw$SalePrice))
+ames_raw$`Garage Cars` <- scale(ames_raw$`Garage Cars`)
+ames_raw$`TotRms AbvGrd` <- scale(ames_raw$`TotRms AbvGrd`)
+#change year remod/add to years since minimum year (1950)
+min_year <- min(unique(ames_raw$`Year Remod/Add`))
+ames_raw$`Year Remod/Add` <- ames_raw$`Year Remod/Add`-min_year
+#standardized years since 1950
+ames_raw$`Year Remod/Add` <- scale(ames_raw$`Year Remod/Add`)
+#one hot encode foundation variable
+dummy <- dummyVars(" ~ Foundation", data=ames_raw)
+final_df <- data.frame(predict(dummy, newdata=ames_raw))
+ames_raw <- cbind(ames_raw, final_df)
+
+ames_raw_2008=ames_raw[ames_raw$`Yr Sold`<2008,]
+ames_raw_2009=ames_raw[ames_raw$`Yr Sold`>=2008,]
+
+lmfit_2008<- lm(SalePrice ~ `Overall Qual` + Foundation + `Year Remod/Add` + (`TotRms AbvGrd`*`Lot Area`) + (`Garage Cars`*`Lot Area`), data = ames_raw_2008)
+
+pred_2009<-exp(predict(lmfit_2008,newdata=ames_raw_2009))
+calc_loss(pred_2009,ames_raw_2009$SalePrice)
 ```
 
 Your answer:
 
 ~~~
-Please write your answer in full sentences.
+One type of feature engineering I applied to the model was indexing the categorical variables. For the variable `TotRms AbvGrd`, there are three levels that contain only one occurrence. There is only one house that has 2 total rooms above grade and there is only one house that has 14 rooms above grade and similar with 15 rooms above grade. Therefore, I will group all total rooms levels that have less than 10 houses under "OTHER"
 
 
 ~~~
